@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { q } from './db.js';
+import { chatWithAI } from './ai.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const UPLOAD_DIR = path.join(__dirname, '..', 'uploads');
@@ -21,6 +22,20 @@ const uploadPhoto = multer({
   storage,
   limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
   fileFilter: (_req, file, cb) => cb(null, /^image\//.test(file.mimetype)),
+});
+
+const cvStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => cb(null, UPLOAD_DIR),
+  filename: (req, file, cb) => {
+    let ext = path.extname(file.originalname || '').toLowerCase();
+    if (!/^\.(pdf|docx?)$/.test(ext)) ext = '.pdf';
+    cb(null, `cv-${req.user.id}-${Date.now()}${ext}`);
+  },
+});
+const uploadCV = multer({
+  storage: cvStorage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: (_req, file, cb) => cb(null, /\.(pdf|doc|docx)$/i.test(file.originalname) || /pdf|msword|officedocument/.test(file.mimetype)),
 });
 import {
   signSession, setSessionCookie, clearSessionCookie,
@@ -207,6 +222,24 @@ export function createRoutes(realtime) {
     });
   });
 
+  // ── CV upload ────────────────────────────────────────
+  r.post('/me/cv', requireAuth, (req, res) => {
+    uploadCV.single('cv')(req, res, async (err) => {
+      if (err) return res.status(400).json({ error: err.message || 'Upload failed' });
+      if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+      const url = `/uploads/${req.file.filename}`;
+      const filename = req.file.originalname;
+      await q('UPDATE worker_profiles SET cv_url=$1, cv_filename=$2 WHERE user_id=$3', [url, filename, req.user.id]);
+      res.json(await fullProfile(req.user));
+    });
+  });
+
+  r.delete('/me/cv', requireAuth, async (req, res) => {
+    await q('UPDATE worker_profiles SET cv_url=NULL, cv_filename=NULL WHERE user_id=$1', [req.user.id]);
+    res.json(await fullProfile(req.user));
+  });
+
+
   // ── Public profile view ─────────────────────────────────────────
   r.get('/users/:id/profile', requireAuth, async (req, res) => {
     const { rows } = await q('SELECT * FROM users WHERE id=$1', [req.params.id]);
@@ -230,9 +263,9 @@ export function createRoutes(realtime) {
       where += ` AND (u.name ILIKE $${params.length} OR p.headline ILIKE $${params.length} OR p.job_seeking ILIKE $${params.length} OR array_to_string(p.skills,' ') ILIKE $${params.length})`;
     }
     const { rows } = await q(
-      `SELECT u.id, u.name, u.picture, u.paid AS premium, p.headline, p.profession, p.skills, p.hourly_rate, p.location, p.availability, p.job_seeking
+      `SELECT u.id, u.name, u.picture, u.paid AS premium, p.headline, p.profession, p.skills, p.hourly_rate, p.location, p.availability, p.job_seeking, p.promoted
        FROM users u JOIN worker_profiles p ON p.user_id=u.id
-       WHERE ${where} ORDER BY u.paid DESC, p.updated_at DESC LIMIT 100`, params);
+       WHERE ${where} ORDER BY p.promoted DESC NULLS LAST, u.paid DESC, p.updated_at DESC LIMIT 100`, params);
     res.json(rows);
   });
 
@@ -240,7 +273,7 @@ export function createRoutes(realtime) {
   r.get('/jobs', requireAuth, async (req, res) => {
     const { category, search } = req.query;
     const params = [];
-    let where = `j.status='open'`;
+    let where = `(j.status='open' OR j.status='completed')`;
     if (category) { params.push(category); where += ` AND j.category=$${params.length}`; }
     if (search) { params.push(`%${search}%`); where += ` AND (j.title ILIKE $${params.length} OR j.description ILIKE $${params.length})`; }
     const { rows } = await q(
@@ -302,6 +335,52 @@ export function createRoutes(realtime) {
        JOIN users u ON u.id=j.company_id
        LEFT JOIN company_profiles c ON c.user_id=j.company_id
        WHERE a.worker_id=$1 ORDER BY a.created_at DESC`, [req.user.id]);
+    res.json(rows);
+  });
+
+  // ── AI Chat ─────────────────────────────────────────────────────
+  r.post('/ai/chat', requireAuth, async (req, res) => {
+    try {
+      const reply = await chatWithAI(req.body.message, req.body.context);
+      res.json({ reply });
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  // ── Ratings ─────────────────────────────────────────────────────
+  r.post('/ratings', requireAuth, async (req, res) => {
+    const { to_user_id, job_id, rating } = req.body || {};
+    if (!to_user_id || !job_id || rating == null) return res.status(400).json({ error: 'Missing required fields' });
+    try {
+      const { rows } = await q(
+        `INSERT INTO ratings (from_user_id, to_user_id, job_id, rating) VALUES ($1,$2,$3,$4) RETURNING *`,
+        [req.user.id, to_user_id, job_id, rating]
+      );
+      res.json(rows[0]);
+    } catch (e) {
+      res.status(500).json({ error: e.message });
+    }
+  });
+
+  r.get('/users/:id/ratings', requireAuth, async (req, res) => {
+    const { rows } = await q('SELECT * FROM ratings WHERE to_user_id=$1 ORDER BY created_at DESC', [req.params.id]);
+    const total = rows.length;
+    const avg = total > 0 ? rows.reduce((s, r) => s + r.rating, 0) / total : 0;
+    res.json({ avg_rating: avg, total_ratings: total, ratings: rows });
+  });
+
+  r.get('/ratings/pending', requireAuth, async (req, res) => {
+    const { rows } = await q(
+      `SELECT j.* FROM jobs j 
+       WHERE j.status='completed' AND (
+         j.company_id=$1 OR 
+         EXISTS(SELECT 1 FROM applications a WHERE a.job_id=j.id AND a.worker_id=$1)
+       ) AND NOT EXISTS (
+         SELECT 1 FROM ratings r WHERE r.job_id=j.id AND r.from_user_id=$1
+       )`,
+      [req.user.id]
+    );
     res.json(rows);
   });
 
@@ -479,6 +558,24 @@ export function createRoutes(realtime) {
   r.post('/admin/users/:id/ban', requireAuth, requireAdmin, async (req, res) => {
     const { rows } = await q('UPDATE users SET banned=NOT banned WHERE id=$1 RETURNING id, banned', [req.params.id]);
     res.json(rows[0]);
+  });
+
+  r.post('/admin/jobs/:id/complete', requireAuth, requireAdmin, async (req, res) => {
+    const { rows } = await q(
+      `UPDATE jobs SET status='completed', completed_at=NOW(), completed_by_admin=$1 WHERE id=$2 RETURNING *`,
+      [req.user.id, req.params.id]
+    );
+    res.json(rows[0]);
+  });
+
+  r.post('/admin/users/:id/promote', requireAuth, requireAdmin, async (req, res) => {
+    await q('UPDATE worker_profiles SET promoted=TRUE WHERE user_id=$1', [req.params.id]);
+    res.json({ ok: true });
+  });
+
+  r.post('/admin/users/:id/unpromote', requireAuth, requireAdmin, async (req, res) => {
+    await q('UPDATE worker_profiles SET promoted=FALSE WHERE user_id=$1', [req.params.id]);
+    res.json({ ok: true });
   });
 
   return r;

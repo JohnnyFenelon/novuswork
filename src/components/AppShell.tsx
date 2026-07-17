@@ -14,6 +14,7 @@ import TalentView from './TalentView';
 import SupportView from './SupportView';
 import ActivationModal from './ActivationModal';
 import VideoCall, { IncomingCall } from './VideoCall';
+import AiAssistant from './AiAssistant';
 
 interface Props {
   session: Session;
@@ -80,6 +81,7 @@ export default function AppShell({ session, config, onSession, onLogout }: Props
         <ActivationModal config={config} onClose={() => setShowActivation(false)}
           onPaid={(s) => { setShowActivation(false); onSession(s); }} />
       )}
+      <AiAssistant context={activeView} />
 
       {/* Sidebar */}
       <div className="w-16 md:w-64 bg-white border-r border-gray-200 flex flex-col shrink-0">

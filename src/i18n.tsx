@@ -186,6 +186,16 @@ const en: Dict = {
   'prof.addphoto': 'Add a profile photo',
   'prof.uploading': 'Uploading…',
   'prof.phototoobig': 'Image is too large (max 5 MB)',
+  // AI Assistant
+  'ai.title': 'AI Assistant',
+  'ai.welcome': "Hi! I'm your NovusWork AI assistant. I can help you fill out forms, write cover letters, and improve your profile. How can I help?",
+  'ai.inputph': 'Ask me anything…',
+  'ai.error': 'Sorry, something went wrong. Please try again.',
+  // Rating
+  'rating.placeholder': 'Write an optional review…',
+  'rating.cancel': 'Cancel',
+  'rating.submit': 'Submit Rating',
+  'rating.submitting': 'Submitting…',
 };
 
 const es: Dict = {
@@ -360,6 +370,16 @@ const es: Dict = {
   'prof.addphoto': 'Agrega una foto de perfil',
   'prof.uploading': 'Subiendo…',
   'prof.phototoobig': 'La imagen es demasiado grande (máx. 5 MB)',
+  // AI Assistant
+  'ai.title': 'Asistente IA',
+  'ai.welcome': '¡Hola! Soy tu asistente IA de NovusWork. Puedo ayudarte a llenar formularios, escribir cartas de presentación y mejorar tu perfil. ¿En qué puedo ayudarte?',
+  'ai.inputph': 'Pregúntame lo que sea…',
+  'ai.error': 'Lo siento, algo salió mal. Por favor intenta de nuevo.',
+  // Rating
+  'rating.placeholder': 'Escribe una reseña opcional…',
+  'rating.cancel': 'Cancelar',
+  'rating.submit': 'Enviar Calificación',
+  'rating.submitting': 'Enviando…',
 };
 
 const dicts: Record<Lang, Dict> = { en, es };

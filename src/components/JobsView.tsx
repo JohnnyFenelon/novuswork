@@ -63,6 +63,11 @@ function WorkerJobs({ onActivate }: Props) {
         </div>
       )}
 
+      {/* Training CTA */}
+      <div className="bg-blue-50 border border-blue-200 text-blue-800 rounded-xl p-4 text-sm font-semibold flex items-center justify-between">
+        <span>{t('jobs.traincta') || 'Looking to improve your skills? Train for these jobs at'} <a href="https://academia809.com/" target="_blank" rel="noreferrer" className="underline font-bold">Academia 809</a>!</span>
+      </div>
+
       {/* Search bar */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4 flex flex-col sm:flex-row gap-3">
         <div className="flex-1 flex items-center gap-2 border border-gray-300 rounded-lg px-3">
@@ -172,7 +177,10 @@ function CompanyJobs() {
         <div key={job.id} className="bg-white rounded-2xl border border-gray-200 p-6">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h3 className="font-bold text-lg text-gray-900">{job.title}</h3>
+              <div className="flex items-center gap-2">
+                <h3 className="font-bold text-lg text-gray-900">{job.title}</h3>
+                {job.status === 'completed' && <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">{t('jobs.completed') || 'Completed'}</span>}
+              </div>
               <p className="text-xs text-gray-500 mt-1">{job.category} · {job.job_type} · {job.location} · {t('jobs.posted')} {new Date(job.created_at).toLocaleDateString()}</p>
             </div>
             <button onClick={() => setExpanded(expanded === job.id ? null : job.id)}

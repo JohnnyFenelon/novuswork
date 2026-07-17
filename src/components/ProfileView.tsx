@@ -1,7 +1,7 @@
-import { useState } from 'react';
-import { MapPin, BadgeCheck, Mail, Phone, Edit2, X, Briefcase, GraduationCap, Languages, Globe } from 'lucide-react';
-import { api, PROFESSIONS } from '../api';
-import { Session } from '../types';
+import { useState, useEffect } from 'react';
+import { MapPin, BadgeCheck, Mail, Phone, Edit2, X, Briefcase, GraduationCap, Languages, Globe, FileText, Download, Trash2, Upload, Star } from 'lucide-react';
+import { api, PROFESSIONS, uploadCV, deleteCV, getUserRatings } from '../api';
+import { Session, UserRatingSummary } from '../types';
 import { useT } from '../i18n';
 import AvatarUpload from './AvatarUpload';
 
@@ -17,6 +17,32 @@ export default function ProfileView({ session, onSession }: Props) {
   const { user, profile, experiences, company } = session;
   const isWorker = user.role === 'worker';
   const [editing, setEditing] = useState(false);
+  const [ratings, setRatings] = useState<UserRatingSummary | null>(null);
+  const [uploadingCv, setUploadingCv] = useState(false);
+
+  useEffect(() => {
+    getUserRatings(user.id).then(setRatings).catch(() => {});
+  }, [user.id]);
+
+  const handleDeleteCV = async () => {
+    if (confirm('Delete CV?')) {
+      try {
+        const s = await deleteCV();
+        onSession(s);
+      } catch (e: any) { alert(e.message); }
+    }
+  };
+
+  const handleUploadCV = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingCv(true);
+    try {
+      const s = await uploadCV(file);
+      onSession(s);
+    } catch (err: any) { alert(err.message); }
+    setUploadingCv(false);
+  };
 
   return (
     <div className="space-y-6">
@@ -106,6 +132,49 @@ export default function ProfileView({ session, onSession }: Props) {
               </div>
             </Card>
           )}
+          
+          {/* CV Section */}
+          <Card title="Resume / CV" icon={<FileText className="w-4 h-4 text-primary" />}>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex-1 bg-gray-50 border border-gray-200 rounded-xl p-4 flex items-center justify-between">
+                {profile?.cv_url ? (
+                  <>
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-8 h-8 text-blue-500" />
+                      <div>
+                        <p className="font-semibold text-gray-900 truncate max-w-[200px]" title={profile.cv_filename || 'Your CV'}>{profile.cv_filename || 'Your CV'}</p>
+                        <p className="text-xs text-gray-500">Uploaded</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <a href={profile.cv_url} target="_blank" rel="noopener noreferrer" className="p-2 text-primary hover:bg-blue-50 rounded-lg transition-colors" title="View / Download">
+                        <Download className="w-5 h-5" />
+                      </a>
+                      <button onClick={handleDeleteCV} className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors" title="Delete">
+                        <Trash2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="text-center w-full py-2">
+                    <p className="text-gray-500 text-sm mb-3">No CV uploaded yet</p>
+                    <input type="file" accept=".pdf,.doc,.docx" id="cv-upload-profile" className="hidden" onChange={handleUploadCV} disabled={uploadingCv} />
+                    <label htmlFor="cv-upload-profile" className={`cursor-pointer inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold border ${uploadingCv ? 'opacity-50' : 'hover:bg-gray-50'} text-gray-700 border-gray-300 transition-colors`}>
+                      <Upload className="w-4 h-4" /> {uploadingCv ? 'Uploading...' : 'Upload CV'}
+                    </label>
+                  </div>
+                )}
+              </div>
+              
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 w-full sm:w-64 shrink-0 flex flex-col justify-center">
+                <h4 className="font-bold text-blue-900 mb-1 text-sm">Need a professional CV?</h4>
+                <p className="text-xs text-blue-800 mb-3">Create one for free in minutes.</p>
+                <a href="https://cvgratis2.duckdns.org" target="_blank" rel="noopener noreferrer" className="text-center bg-blue-600 text-white px-3 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
+                  Create Free CV
+                </a>
+              </div>
+            </div>
+          </Card>
         </>
       ) : (
         <>
@@ -125,6 +194,36 @@ export default function ProfileView({ session, onSession }: Props) {
             </Card>
           )}
         </>
+      )}
+
+      {/* Ratings Section */}
+      {ratings && ratings.total_ratings > 0 && (
+        <Card title={`Reviews (${ratings.total_ratings})`} icon={<Star className="w-4 h-4 text-primary" />}>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-2xl font-bold text-gray-900">{Number(ratings.avg_rating).toFixed(1)}</span>
+            <div className="flex text-yellow-400">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star key={star} className={`w-4 h-4 ${star <= ratings.avg_rating ? 'fill-current' : 'text-gray-300'}`} />
+              ))}
+            </div>
+          </div>
+          <div className="space-y-4">
+            {ratings.ratings.map((r) => (
+              <div key={r.id} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                <div className="flex justify-between mb-1">
+                  <span className="font-semibold text-gray-900">{r.from_name || 'User'}</span>
+                  <div className="flex text-yellow-400">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star key={star} className={`w-3 h-3 ${star <= r.rating ? 'fill-current' : 'text-gray-300'}`} />
+                    ))}
+                  </div>
+                </div>
+                {r.job_title && <p className="text-xs text-gray-500 mb-1">Job: {r.job_title}</p>}
+                <p className="text-sm text-gray-700">{r.review}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       {editing && <EditModal session={session} onClose={() => setEditing(false)} onSession={onSession} />}

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Plus, Trash2, ArrowRight, ArrowLeft, CheckCircle2 } from 'lucide-react';
-import { api, PROFESSIONS } from '../api';
+import { Plus, Trash2, ArrowRight, ArrowLeft, CheckCircle2, FileText, Upload } from 'lucide-react';
+import { api, PROFESSIONS, uploadCV } from '../api';
 import { Experience, Session } from '../types';
 import { useT } from '../i18n';
 import AvatarUpload from './AvatarUpload';
@@ -43,6 +43,7 @@ export default function Onboarding({ session, onDone }: Props) {
   const [bio, setBio] = useState('');
   const [portfolio, setPortfolio] = useState('');
   const [linkedin, setLinkedin] = useState('');
+  const [cvFile, setCvFile] = useState<File | null>(null);
 
   // Company fields
   const [companyName, setCompanyName] = useState('');
@@ -53,7 +54,7 @@ export default function Onboarding({ session, onDone }: Props) {
   const [description, setDescription] = useState('');
   const [hiringRoles, setHiringRoles] = useState<string[]>([]);
 
-  const workerSteps = ['The basics', 'Your profession', 'Work experience', 'Job preferences', 'About you'];
+  const workerSteps = ['The basics', 'Your profession', 'Work experience', 'Job preferences', 'About you', 'Your CV'];
   const companySteps = ['Company details', 'Hiring needs'];
   const steps = isCompany ? companySteps : workerSteps;
 
@@ -117,7 +118,10 @@ export default function Onboarding({ session, onDone }: Props) {
             },
             experiences: experiences.filter((e) => e.title.trim()),
           };
-      const s = await api<Session>('/me/profile', { method: 'PUT', body: JSON.stringify(body) });
+      let s = await api<Session>('/me/profile', { method: 'PUT', body: JSON.stringify(body) });
+      if (!isCompany && cvFile) {
+        s = await uploadCV(cvFile);
+      }
       onDone(s);
     } catch (e: any) {
       setError(e.message);
@@ -266,6 +270,27 @@ export default function Onboarding({ session, onDone }: Props) {
                 <input className={inputCls} placeholder="https://…" value={portfolio} onChange={(e) => setPortfolio(e.target.value)} /></div>
               <div><label className={labelCls}>LinkedIn</label>
                 <input className={inputCls} placeholder="https://linkedin.com/in/…" value={linkedin} onChange={(e) => setLinkedin(e.target.value)} /></div>
+            </div>
+          )}
+
+          {!isCompany && step === 5 && (
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center bg-white">
+                <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900 mb-2">Upload your CV (Optional)</h3>
+                <p className="text-gray-500 text-sm mb-6">A polished CV increases your chances of getting hired.</p>
+                <input type="file" accept=".pdf,.doc,.docx" id="cv-upload" className="hidden" onChange={(e) => setCvFile(e.target.files?.[0] || null)} />
+                <label htmlFor="cv-upload" className="cursor-pointer inline-flex items-center gap-2 bg-white border border-gray-300 text-gray-700 px-5 py-2.5 rounded-lg font-semibold hover:bg-gray-50 transition-colors">
+                  <Upload className="w-4 h-4" /> {cvFile ? cvFile.name : 'Select PDF or DOCX'}
+                </label>
+              </div>
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-5 mt-4">
+                <h4 className="font-bold text-blue-900 mb-1">Don't have a CV yet?</h4>
+                <p className="text-sm text-blue-800 mb-3">Create a professional CV for free using our recommended tool.</p>
+                <a href="https://cvgratis2.duckdns.org" target="_blank" rel="noopener noreferrer" className="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-blue-700 transition-colors">
+                  Create Free CV
+                </a>
+              </div>
             </div>
           )}
 

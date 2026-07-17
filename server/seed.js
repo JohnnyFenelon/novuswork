@@ -1,0 +1,134 @@
+import { pool, q, initSchema } from './db.js';
+
+async function seed() {
+  console.log('Starting seed...');
+  await initSchema();
+
+  const companies = [
+    { name: 'Alorica DR', email: 'hr@alorica.com', industry: 'BPO', desc: 'Global customer experience provider.' },
+    { name: 'Teleperformance', email: 'jobs@tp.com', industry: 'BPO', desc: 'Customer care experts.' },
+    { name: 'MediaCorp', email: 'hr@mediacorp.com', industry: 'Media', desc: 'Video and media production.' },
+    { name: 'PhotoStudio', email: 'contact@photostudio.com', industry: 'Photography', desc: 'Professional photography services.' },
+    { name: 'BuildIt Inc', email: 'jobs@buildit.com', industry: 'Construction', desc: 'Construction and blacksmithing.' },
+    { name: 'SalesForce Pro', email: 'hr@salesforcepro.com', industry: 'Sales', desc: 'Global sales team.' },
+    { name: 'SocialBuzz', email: 'hello@socialbuzz.com', industry: 'Marketing', desc: 'Community management and marketing.' },
+    { name: 'DataInsights', email: 'hr@datainsights.com', industry: 'Tech', desc: 'Data analytics and reporting.' },
+  ];
+
+  const companyIds = [];
+
+  for (const c of companies) {
+    const { rows } = await q(
+      `INSERT INTO users (email, name, role, onboarded) VALUES ($1, $2, 'company', true) ON CONFLICT (email) DO NOTHING RETURNING id`,
+      [c.email, c.name]
+    );
+    let id;
+    if (rows.length > 0) {
+      id = rows[0].id;
+      await q(
+        `INSERT INTO company_profiles (user_id, company_name, industry, description) VALUES ($1, $2, $3, $4)`,
+        [id, c.name, c.industry, c.desc]
+      );
+    } else {
+      const res = await q(`SELECT id FROM users WHERE email=$1`, [c.email]);
+      id = res.rows[0].id;
+    }
+    companyIds.push({ id, name: c.name });
+  }
+
+  const getCompanyId = (name) => companyIds.find(c => c.name.includes(name))?.id || companyIds[0].id;
+
+  const jobsToCreate = [
+    // 10 Call Center Agents (EN, FR, ES)
+    ...Array(10).fill(0).map((_, i) => ({
+      company_id: getCompanyId('Alorica'),
+      title: `Call Center Agent - Multilingual (Position ${i+1})`,
+      category: 'Customer Service',
+      description: 'We are hiring Call Center Agents fluent in English, French, and Spanish. Join our Summer Job Fair and earn up to $1,100 USD hiring bonus!',
+      job_type: 'full-time',
+      budget: '$500 - $800/month',
+    })),
+
+    // 10 Video Editing
+    ...Array(10).fill(0).map((_, i) => ({
+      company_id: getCompanyId('MediaCorp'),
+      title: `Video Editor (Position ${i+1})`,
+      category: 'Design & Creative',
+      description: 'Looking for an experienced video editor to work on commercial projects. Premiere Pro and After Effects required.',
+      job_type: 'contract',
+      budget: '$20 - $35/hr',
+    })),
+
+    // 5 Photographers
+    ...Array(5).fill(0).map((_, i) => ({
+      company_id: getCompanyId('PhotoStudio'),
+      title: `Professional Photographer (Position ${i+1})`,
+      category: 'Design & Creative',
+      description: 'Requesting a professional photographer for upcoming events and product shoots.',
+      job_type: 'part-time',
+      budget: '$50 - $100/hr',
+    })),
+
+    // 5 Blacksmiths
+    ...Array(5).fill(0).map((_, i) => ({
+      company_id: getCompanyId('BuildIt'),
+      title: `Experienced Blacksmith (Position ${i+1})`,
+      category: 'Other',
+      description: 'Individual profiles requesting blacksmiths for custom metalwork and structural support.',
+      job_type: 'contract',
+      budget: '$15 - $25/hr',
+    })),
+
+    // 3 Constructors
+    ...Array(3).fill(0).map((_, i) => ({
+      company_id: getCompanyId('BuildIt'),
+      title: `Constructor / Builder (Position ${i+1})`,
+      category: 'Other',
+      description: 'Looking for reliable constructors for new building projects.',
+      job_type: 'full-time',
+      budget: '$20 - $30/hr',
+    })),
+
+    // 5 Sales Agents (Creole, EN)
+    ...Array(5).fill(0).map((_, i) => ({
+      company_id: getCompanyId('SalesForce'),
+      title: `Sales Agent - Creole & English (Position ${i+1})`,
+      category: 'Sales & Marketing',
+      description: 'Hiring sales agents fluent in Creole and English. Earn top commissions!',
+      job_type: 'full-time',
+      budget: '$600/month + commission',
+    })),
+
+    // 5 Community Managers
+    ...Array(5).fill(0).map((_, i) => ({
+      company_id: getCompanyId('SocialBuzz'),
+      title: `Community Manager (Position ${i+1})`,
+      category: 'Sales & Marketing',
+      description: 'Manage our social media presence, engage with the community, and drive growth.',
+      job_type: 'full-time',
+      budget: '$800 - $1200/month',
+    })),
+
+    // 5 Data Analysts
+    ...Array(5).fill(0).map((_, i) => ({
+      company_id: getCompanyId('DataInsights'),
+      title: `Data Analyst (Position ${i+1})`,
+      category: 'Data Entry',
+      description: 'Looking for a data analyst with SQL and Python skills to help us make sense of our metrics.',
+      job_type: 'full-time',
+      budget: '$1500 - $2500/month',
+    })),
+  ];
+
+  for (const job of jobsToCreate) {
+    await q(
+      `INSERT INTO jobs (company_id, title, category, description, job_type, budget) VALUES ($1, $2, $3, $4, $5, $6)`,
+      [job.company_id, job.title, job.category, job.description, job.job_type, job.budget]
+    );
+  }
+
+  console.log('Seed complete! Added ' + jobsToCreate.length + ' jobs.');
+  pool.end();
+}
+
+seed().catch(console.error);

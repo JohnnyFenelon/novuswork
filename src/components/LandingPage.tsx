@@ -172,10 +172,17 @@ export default function LandingPage({ config, onAuthed }: LandingPageProps) {
                 <Badge icon={<Award className="w-5 h-5 text-gray-600" />} text={lang === 'es' ? 'Activaciones verificadas' : 'Verified activations'} />
               </div>
             </div>
-            <div className="bg-gradient-to-br from-green-50 to-orange-50 rounded-3xl p-10 text-center">
-              <MapPin className="w-10 h-10 text-primary mx-auto mb-4" />
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('trust.florida.title')}</h3>
-              <p className="text-gray-600 max-w-sm mx-auto">{t('trust.florida.desc')}</p>
+            <div className="flex flex-col gap-6">
+              <div className="bg-gradient-to-br from-green-50 to-orange-50 rounded-3xl p-10 text-center">
+                <MapPin className="w-10 h-10 text-primary mx-auto mb-4" />
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">{t('trust.florida.title')}</h3>
+                <p className="text-gray-600 max-w-sm mx-auto">{t('trust.florida.desc')}</p>
+              </div>
+              <a href="https://academia809.com/" target="_blank" rel="noopener noreferrer" className="block bg-primary hover:bg-green-700 transition-colors rounded-3xl p-8 text-center text-white shadow-lg">
+                <Award className="w-10 h-10 text-white mx-auto mb-3" />
+                <h3 className="text-2xl font-bold mb-2">Train with Academia809 and find your next job here!</h3>
+                <p className="text-green-50 text-sm font-medium">Enhance your skills with premium courses at Academia809.com</p>
+              </a>
             </div>
           </div>
         </div>

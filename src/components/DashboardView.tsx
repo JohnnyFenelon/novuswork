@@ -69,6 +69,34 @@ export default function DashboardView({ session, onActivate, onNavigate }: Props
         )}
       </div>
 
+      {/* External Resources */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <a href="https://cvgratis2.duckdns.org" target="_blank" rel="noopener noreferrer" className="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col justify-between hover:border-primary transition-colors group">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-5 h-5 text-primary" />
+              <h3 className="font-bold text-gray-900 text-lg">Create a Professional CV</h3>
+            </div>
+            <p className="text-sm text-gray-600 mb-4">Build an outstanding resume for free and increase your chances of getting hired.</p>
+          </div>
+          <span className="text-primary font-bold text-sm flex items-center gap-1 group-hover:underline">
+            Visit cvgratis2.duckdns.org <ArrowRight className="w-4 h-4" />
+          </span>
+        </a>
+        <a href="https://academia809.com/" target="_blank" rel="noopener noreferrer" className="bg-gradient-to-br from-primary to-green-700 rounded-2xl p-6 flex flex-col justify-between text-white hover:opacity-95 transition-opacity group shadow-sm">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <BadgeCheck className="w-5 h-5 text-white" />
+              <h3 className="font-bold text-white text-lg">Enhance your skills with courses at Academia809</h3>
+            </div>
+            <p className="text-green-50 text-sm mb-4">Train for your dream job with premium courses and certifications.</p>
+          </div>
+          <span className="text-white font-bold text-sm flex items-center gap-1 group-hover:underline">
+            Start learning now <ArrowRight className="w-4 h-4" />
+          </span>
+        </a>
+      </div>
+
       {/* Recent activity */}
       <div className="bg-white rounded-2xl border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">

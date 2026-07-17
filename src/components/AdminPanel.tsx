@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Users, Briefcase, FileText, LifeBuoy, LogOut, Video, Mail, MessageSquare,
-  BadgeCheck, Ban, X, RefreshCw, Circle, LayoutDashboard,
+  BadgeCheck, Ban, X, RefreshCw, Circle, LayoutDashboard, TrendingUp
 } from 'lucide-react';
 import { UserPlus } from 'lucide-react';
 import { api, logout, PROFESSIONS } from '../api';
@@ -16,13 +16,14 @@ interface Props {
   onLogout: () => void;
 }
 
-type Tab = 'overview' | 'users' | 'messages' | 'support';
+type Tab = 'overview' | 'users' | 'messages' | 'support' | 'jobs';
 
 export default function AdminPanel({ session, onLogout }: Props) {
   const [tab, setTab] = useHistoryNav<Tab>('overview', 'atab');
   const [stats, setStats] = useState<any>(null);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [tickets, setTickets] = useState<any[]>([]);
+  const [jobs, setJobs] = useState<any[]>([]);
   const [viewing, setViewing] = useState<any | null>(null);
   const [emailTo, setEmailTo] = useState<AdminUser | null>(null);
   const [calling, setCalling] = useState<{ id: number; name: string } | null>(null);
@@ -35,6 +36,7 @@ export default function AdminPanel({ session, onLogout }: Props) {
     api('/admin/stats').then(setStats).catch(() => {});
     api<AdminUser[]>('/admin/users').then(setUsers).catch(() => {});
     api('/admin/support').then(setTickets).catch(() => {});
+    api<any[]>('/jobs').then(setJobs).catch(() => {});
   };
 
   useEffect(() => {
@@ -63,6 +65,17 @@ export default function AdminPanel({ session, onLogout }: Props) {
     api<AdminUser[]>('/admin/users').then(setUsers).catch(() => {});
   };
 
+  const togglePromote = async (u: AdminUser) => {
+    const action = u.promoted ? 'unpromote' : 'promote';
+    await api(`/admin/users/${u.id}/${action}`, { method: 'POST' }).catch(() => {});
+    api<AdminUser[]>('/admin/users').then(setUsers).catch(() => {});
+  };
+
+  const completeJob = async (id: number) => {
+    await api(`/admin/jobs/${id}/complete`, { method: 'POST' }).catch(() => {});
+    api<any[]>('/jobs').then(setJobs).catch(() => {});
+  };
+
   const openChat = (id: number) => { setChatWith(id); setTab('messages'); };
 
   const onlineCount = users.filter((u) => u.online).length;
@@ -87,6 +100,7 @@ export default function AdminPanel({ session, onLogout }: Props) {
             { id: 'users', label: 'Users', icon: Users },
             { id: 'messages', label: 'Messages', icon: MessageSquare },
             { id: 'support', label: 'Support', icon: LifeBuoy },
+            { id: 'jobs', label: 'Jobs', icon: Briefcase },
           ] as { id: Tab; label: string; icon: any }[]).map((item) => (
             <button key={item.id} onClick={() => setTab(item.id)}
               className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl text-left justify-center md:justify-start ${
@@ -190,6 +204,7 @@ export default function AdminPanel({ session, onLogout }: Props) {
                                 : <span className="text-gray-400 text-xs">Last seen {u.last_seen ? new Date(u.last_seen).toLocaleString() : 'never'}</span>}
                               <div className="flex gap-1">
                                 {u.paid && <span className="bg-amber-100 text-amber-700 text-[10px] font-bold px-1.5 py-0.5 rounded">⭐ PREMIUM</span>}
+                                {u.promoted && <span className="bg-blue-100 text-blue-700 text-[10px] font-bold px-1.5 py-0.5 rounded">PROMOTED</span>}
                                 {u.banned && <span className="bg-red-50 text-red-600 text-[10px] font-bold px-1.5 py-0.5 rounded">BANNED</span>}
                               </div>
                             </div>
@@ -204,6 +219,11 @@ export default function AdminPanel({ session, onLogout }: Props) {
                               <IconBtn title={u.paid ? 'Remove Premium' : 'Grant Premium'} onClick={() => toggle(u, 'activate')}>
                                 <BadgeCheck className={`w-4 h-4 ${u.paid ? 'text-primary' : ''}`} />
                               </IconBtn>
+                              {u.role === 'worker' && (
+                                <IconBtn title={u.promoted ? 'Unpromote' : 'Promote'} onClick={() => togglePromote(u)}>
+                                  <TrendingUp className={`w-4 h-4 ${u.promoted ? 'text-blue-500' : ''}`} />
+                                </IconBtn>
+                              )}
                               <IconBtn title={u.banned ? 'Unban' : 'Ban'} onClick={() => toggle(u, 'ban')}>
                                 <Ban className={`w-4 h-4 ${u.banned ? 'text-red-500' : ''}`} />
                               </IconBtn>
@@ -238,6 +258,30 @@ export default function AdminPanel({ session, onLogout }: Props) {
                       <span className="text-xs text-gray-400">{new Date(t.created_at).toLocaleString()}</span>
                     </div>
                     <p className="mt-3 text-sm text-gray-700 whitespace-pre-line">{t.message}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {tab === 'jobs' && (
+              <div className="space-y-3">
+                {jobs.length === 0 && (
+                  <div className="bg-white rounded-2xl border border-gray-200 p-12 text-center text-gray-400">No jobs found.</div>
+                )}
+                {jobs.map((job) => (
+                  <div key={job.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-gray-900">{job.title}</h3>
+                        {job.status === 'completed' && <span className="bg-gray-100 text-gray-600 text-[10px] font-bold px-2 py-0.5 rounded uppercase">Completed</span>}
+                      </div>
+                      <p className="text-xs text-gray-500">{job.company_name} · {job.category} · {job.location}</p>
+                    </div>
+                    {job.status !== 'completed' && (
+                      <button onClick={() => completeJob(job.id)} className="bg-primary hover:bg-primary-dark text-white text-xs font-bold px-4 py-2 rounded-lg">
+                        Mark as Complete
+                      </button>
+                    )}
                   </div>
                 ))}
               </div>

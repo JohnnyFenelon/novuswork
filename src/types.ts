@@ -28,6 +28,10 @@ export interface WorkerProfile {
   languages: string;
   location: string;
   links: Record<string, string>;
+  cv_url: string;
+  cv_filename: string;
+  promoted: boolean;
+  promoted_until: string | null;
 }
 
 export interface Experience {
@@ -75,6 +79,8 @@ export interface Job {
   location: string;
   status: string;
   created_at: string;
+  completed_at?: string | null;
+  completed_by_admin?: number | null;
   company_name?: string;
   applicants?: number;
   applications?: JobApplication[];
@@ -102,6 +108,7 @@ export interface TalentCard {
   name: string;
   picture: string;
   premium?: boolean;
+  promoted?: boolean;
   headline: string;
   profession: string;
   skills: string[];
@@ -109,6 +116,9 @@ export interface TalentCard {
   location: string;
   availability: string;
   job_seeking: string;
+  avg_rating?: number | null;
+  rating_count?: number;
+  cv_url?: string;
 }
 
 export interface Message {
@@ -132,11 +142,37 @@ export interface Thread {
   unread: number;
 }
 
+export interface Rating {
+  id: number;
+  from_user_id: number;
+  to_user_id: number;
+  job_id: number;
+  rating: number;
+  review: string;
+  created_at: string;
+  from_name?: string;
+  from_picture?: string;
+  job_title?: string;
+}
+
+export interface UserRatingSummary {
+  avg_rating: number;
+  total_ratings: number;
+  ratings: Rating[];
+}
+
+export interface AiMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
 export interface AdminUser extends User {
   headline?: string;
   profession?: string;
   company_name?: string;
+  promoted?: boolean;
   online: boolean;
 }
 
 export type AppView = 'dashboard' | 'jobs' | 'talent' | 'messages' | 'profile' | 'support';
+

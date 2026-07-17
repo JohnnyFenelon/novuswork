@@ -43,6 +43,10 @@ export async function initSchema() {
       languages     TEXT NOT NULL DEFAULT '',
       location      TEXT NOT NULL DEFAULT '',
       links         JSONB NOT NULL DEFAULT '{}'::jsonb, -- portfolio, linkedin...
+      cv_url        TEXT NOT NULL DEFAULT '',
+      cv_filename   TEXT NOT NULL DEFAULT '',
+      promoted      BOOLEAN NOT NULL DEFAULT FALSE,
+      promoted_until TIMESTAMPTZ,
       updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
@@ -76,7 +80,9 @@ export async function initSchema() {
       job_type      TEXT NOT NULL DEFAULT 'full-time',  -- full-time | part-time | contract
       budget        TEXT NOT NULL DEFAULT '',
       location      TEXT NOT NULL DEFAULT 'Remote',
-      status        TEXT NOT NULL DEFAULT 'open',       -- open | closed
+      status        TEXT NOT NULL DEFAULT 'open',       -- open | closed | completed
+      completed_at  TIMESTAMPTZ,
+      completed_by_admin INTEGER REFERENCES users(id),
       created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
 
@@ -119,5 +125,29 @@ export async function initSchema() {
       status          TEXT NOT NULL DEFAULT 'created',  -- created | completed
       created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    CREATE TABLE IF NOT EXISTS ratings (
+      id            SERIAL PRIMARY KEY,
+      from_user_id  INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      to_user_id    INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      job_id        INTEGER NOT NULL REFERENCES jobs(id) ON DELETE CASCADE,
+      rating        INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+      review        TEXT NOT NULL DEFAULT '',
+      created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(from_user_id, to_user_id, job_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_ratings_to_user ON ratings (to_user_id);
   `);
+
+  /* ── Add columns to existing tables if they're missing (safe migrations) ── */
+  const safeAdd = async (table, col, def) => {
+    try { await q(`ALTER TABLE ${table} ADD COLUMN ${col} ${def}`); }
+    catch (_) { /* column already exists */ }
+  };
+  await safeAdd('worker_profiles', 'cv_url', "TEXT NOT NULL DEFAULT ''");
+  await safeAdd('worker_profiles', 'cv_filename', "TEXT NOT NULL DEFAULT ''");
+  await safeAdd('worker_profiles', 'promoted', 'BOOLEAN NOT NULL DEFAULT FALSE');
+  await safeAdd('worker_profiles', 'promoted_until', 'TIMESTAMPTZ');
+  await safeAdd('jobs', 'completed_at', 'TIMESTAMPTZ');
+  await safeAdd('jobs', 'completed_by_admin', 'INTEGER REFERENCES users(id)');
 }
