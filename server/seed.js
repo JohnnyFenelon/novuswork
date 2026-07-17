@@ -14,6 +14,9 @@ async function seed() {
     { name: 'SocialBuzz', email: 'hello@socialbuzz.com', industry: 'Marketing', desc: 'Community management and marketing.' },
     { name: 'DataInsights', email: 'hr@datainsights.com', industry: 'Tech', desc: 'Data analytics and reporting.' },
     { name: 'CCS Companies', email: 'hr@ccscompanies.com', industry: 'BPO', desc: 'Customer service and business solutions.' },
+    { name: 'FullStack', email: 'hr@fullstack.com', industry: 'IT/Tech', desc: 'The most transparent IT talent network connecting highly skilled individuals with top global companies.' },
+    { name: 'PedidosYa', email: 'jobs@pedidosya.com', industry: 'Logistics/Tech', desc: 'Leading technology company in delivery and quick-commerce in Latin America.' },
+    { name: 'BairesDev', email: 'jobs@bairesdev.com', industry: 'IT/Tech', desc: 'Nearshore software outsourcing company.' },
   ];
 
   const companyIds = [];
@@ -63,6 +66,38 @@ async function seed() {
       description: 'Are you looking to work a Monday - Friday schedule AND make a great base pay AND make an amazing BONUS!?!? The CCS Companies are hiring for shifts in our Salem location! Hourly base pay is up to $16.00/hr ($17.00/hr if bilingual Spanish). On average our Associates are currently earning a bonus of $400-$600 every 2 weeks!',
       job_type: 'full-time',
       budget: '$16.00/hr - $17.00/hr',
+    },
+    {
+      company_id: getCompanyId('FullStack'),
+      title: 'Full Stack Developer (Java + Kotlin + React) - Remote - Latin America',
+      category: 'Programmers',
+      description: 'FullStack is the most transparent IT talent network, connecting highly skilled individuals with top global companies and Silicon Valley startups for remote, on-demand projects.',
+      job_type: 'full-time',
+      budget: 'Competitive',
+    },
+    {
+      company_id: getCompanyId('FullStack'),
+      title: 'Senior Elixir Developer, React focused Projects - Remote - Latin America',
+      category: 'Programmers',
+      description: 'Senior Elixir Developer role focusing on React projects. Remote in Latin America.',
+      job_type: 'full-time',
+      budget: 'Competitive',
+    },
+    {
+      company_id: getCompanyId('PedidosYa'),
+      title: 'Data Sr Analyst',
+      category: 'Data Entry',
+      description: 'PedidosYa forma parte de Delivery Hero, empresa líder mundial en servicios de delivery. On-site in Santo Domingo, Distrito Nacional, Dominican Republic.',
+      job_type: 'full-time',
+      budget: 'Competitive',
+    },
+    {
+      company_id: getCompanyId('BairesDev'),
+      title: 'Ingeniero React - Trabajo Remoto',
+      category: 'Front End',
+      description: 'Ingeniero React - Remote work. BairesDev is the fastest growing Nearshore Software Outsourcing company.',
+      job_type: 'full-time',
+      budget: 'Competitive',
     },
     // 10 Call Center Agents (EN, FR, ES)
     ...Array(10).fill(0).map((_, i) => ({
