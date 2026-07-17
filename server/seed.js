@@ -13,6 +13,7 @@ async function seed() {
     { name: 'SalesForce Pro', email: 'hr@salesforcepro.com', industry: 'Sales', desc: 'Global sales team.' },
     { name: 'SocialBuzz', email: 'hello@socialbuzz.com', industry: 'Marketing', desc: 'Community management and marketing.' },
     { name: 'DataInsights', email: 'hr@datainsights.com', industry: 'Tech', desc: 'Data analytics and reporting.' },
+    { name: 'CCS Companies', email: 'hr@ccscompanies.com', industry: 'BPO', desc: 'Customer service and business solutions.' },
   ];
 
   const companyIds = [];
@@ -39,6 +40,30 @@ async function seed() {
   const getCompanyId = (name) => companyIds.find(c => c.name.includes(name))?.id || companyIds[0].id;
 
   const jobsToCreate = [
+    {
+      company_id: getCompanyId('CCS Companies'),
+      title: 'Account Manager',
+      category: 'Customer Service',
+      description: 'The primary responsibility of the Account Manager is to build and maintain strong, long-lasting customer relationships and partnerships with new and existing clients. The Account Manager will facilitate communication between clients and all other supporting divisions within The CCS Companies organization.',
+      job_type: 'full-time',
+      budget: '$60,000 - $65,000/year',
+    },
+    {
+      company_id: getCompanyId('CCS Companies'),
+      title: 'Consumer Correspondence Representative',
+      category: 'Customer Service',
+      description: 'Review and analyze consumer correspondence and follow organization, state and Federal regulations regarding the dispute or validation process. Operate out of the Santo Domingo office.',
+      job_type: 'full-time',
+      budget: 'Competitive',
+    },
+    {
+      company_id: getCompanyId('CCS Companies'),
+      title: 'Customer Service Agent - Portsmouth 2026',
+      category: 'Customer Service',
+      description: 'Are you looking to work a Monday - Friday schedule AND make a great base pay AND make an amazing BONUS!?!? The CCS Companies are hiring for shifts in our Salem location! Hourly base pay is up to $16.00/hr ($17.00/hr if bilingual Spanish). On average our Associates are currently earning a bonus of $400-$600 every 2 weeks!',
+      job_type: 'full-time',
+      budget: '$16.00/hr - $17.00/hr',
+    },
     // 10 Call Center Agents (EN, FR, ES)
     ...Array(10).fill(0).map((_, i) => ({
       company_id: getCompanyId('Alorica'),
